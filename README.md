@@ -1,0 +1,3 @@
+# Hedgehog ₿
+
+Cryptocurrency trading bot
