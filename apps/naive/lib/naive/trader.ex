@@ -79,6 +79,22 @@ defmodule Naive.Trader do
     {:noreply, %{state | sell_order: order}}
   end
 
+  def handle_cast(
+        %TradeEvent{
+          seller_order_id: order_id,
+          quantity: quantity
+        },
+        %State{
+          sell_order: %Binance.OrderResponse{
+            order_id: order_id,
+            orig_qty: quantity
+          }
+        } = state
+      ) do
+    Logger.info("Trade finished, trader will now exit")
+    {:stop, :normal, state}
+  end
+
   defp fetch_tick_size(symbol) do
     Binance.get_exchange_info()
     |> elem(1)
