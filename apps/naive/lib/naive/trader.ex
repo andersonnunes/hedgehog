@@ -3,6 +3,8 @@ defmodule Naive.Trader do
 
   require Logger
 
+  alias Streamer.Binance.TradeEvent
+
   defmodule State do
     @enforce_keys [:symbol, :profit_interval, :tick_size]
     defstruct [
@@ -31,6 +33,20 @@ defmodule Naive.Trader do
        profit_interval: profit_interval,
        tick_size: tick_size
      }}
+  end
+
+  def handle_cast(
+        %TradeEvent{price: price},
+        %State{symbol: symbol, buy_order: nil} = state
+      ) do
+    quantity = "100"
+
+    Logger.info("Placing BUY order for #{symbol}@#{price}, quantity: #{quantity}")
+
+    {:ok, %Binance.OrderResponse{} = order} =
+      Binance.order_limit_buy(symbol, quantity, price, "GTC")
+
+    {:noreply, %{state | buy_order: order}}
   end
 
   defp fetch_tick_size(symbol) do
