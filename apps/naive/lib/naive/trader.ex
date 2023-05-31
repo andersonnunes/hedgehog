@@ -95,6 +95,10 @@ defmodule Naive.Trader do
     {:stop, :normal, state}
   end
 
+  def handle_cast(%TradeEvent{}, state) do
+    {:noreply, state}
+  end
+
   defp fetch_tick_size(symbol) do
     Binance.get_exchange_info()
     |> elem(1)
