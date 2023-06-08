@@ -21,4 +21,8 @@ defmodule BinanceMock do
   def init(_args) do
     {:ok, %State{}}
   end
+
+  def get_exchange_info do
+    Binance.get_exchange_info()
+  end
 end
