@@ -34,6 +34,13 @@ defmodule BinanceMock do
     order_limit(symbol, quantity, price, "SELL")
   end
 
+  def get_order(symbol, time, order_id) do
+    GenServer.call(
+      __MODULE__,
+      {:get_order, symbol, time, order_id}
+    )
+  end
+
   def handle_cast(
         {:add_order, %Binance.Order{symbol: symbol} = order},
         %State{
@@ -60,6 +67,31 @@ defmodule BinanceMock do
         %State{fake_order_id: id} = state
       ) do
     {:reply, id + 1, %{state | fake_order_id: id + 1}}
+  end
+
+  def handle_call(
+        {:get_order, symbol, time, order_id},
+        _from,
+        %State{order_books: order_books} = state
+      ) do
+    order_book =
+      Map.get(
+        order_books,
+        :"#{symbol}",
+        %OrderBook{}
+      )
+
+    result =
+      (order_book.buy_side ++
+         order_book.sell_side ++
+         order_book.historical)
+      |> Enum.find(
+        &(&1.symbol == symbol and
+            &1.time == time and
+            &1.order_id == order_id)
+      )
+
+    {:reply, {:ok, result}, state}
   end
 
   defp order_limit(symbol, quantity, price, side) do
