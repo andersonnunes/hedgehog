@@ -114,6 +114,7 @@ defmodule Naive.Leader do
     %{
       symbol: symbol,
       chunks: 1,
+      buy_down_interval: "0.0001",
       profit_interval: "-0.0012",
       tick_size: tick_size
     }
