@@ -2,6 +2,8 @@ defmodule Naive.Leader do
   use GenServer
 
   require Logger
+
+  alias Decimal, as: D
   alias Naive.Trader
 
   @binance_client Application.compile_env(:naive, :binance_client)
@@ -124,7 +126,10 @@ defmodule Naive.Leader do
   end
 
   defp fresh_trader_state(settings) do
-    struct(Trader.State, settings)
+    %{
+      struct(Trader.State, settings)
+      | budget: D.div(settings.budget, settings.chunks)
+    }
   end
 
   defp start_new_trader(%Trader.State{} = state) do
