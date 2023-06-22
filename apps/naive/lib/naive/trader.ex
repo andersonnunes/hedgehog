@@ -9,14 +9,16 @@ defmodule Naive.Trader do
   @binance_client Application.compile_env(:naive, :binance_client)
 
   defmodule State do
-    @enforce_keys [:symbol, :buy_down_interval, :profit_interval, :tick_size]
+    @enforce_keys [:symbol, :budget, :buy_down_interval, :profit_interval, :tick_size, :step_size]
     defstruct [
       :symbol,
+      :budget,
       :buy_order,
       :sell_order,
       :buy_down_interval,
       :profit_interval,
-      :tick_size
+      :tick_size,
+      :step_size
     ]
   end
 
