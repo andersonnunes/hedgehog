@@ -32,7 +32,8 @@ defmodule Streamer.MixProject do
       {:binance, "~> 1.0"},
       {:ecto_sql, "~> 3.10"},
       {:ecto_enum, "~> 1.4"},
-      {:postgrex, "~> 0.17.1"}
+      {:postgrex, "~> 0.17.1"},
+      {:core, in_umbrella: true}
     ]
   end
 end
