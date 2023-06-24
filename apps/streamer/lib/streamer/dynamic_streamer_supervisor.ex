@@ -16,6 +16,11 @@ defmodule Streamer.DynamicStreamerSupervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
+  def autostart_streaming do
+    fetch_symbols_to_stream()
+    |> Enum.map(&start_streaming/1)
+  end
+
   def start_streaming(symbol) when is_binary(symbol) do
     case get_pid(symbol) do
       nil ->
@@ -35,7 +40,6 @@ defmodule Streamer.DynamicStreamerSupervisor do
       nil ->
         Logger.warning("Streaming on #{symbol} already stopped")
         {:ok, _settings} = update_streaming_status(symbol, "off")
-        {:ok}
 
       pid ->
         Logger.info("Stopping streaming on #{symbol}")
@@ -47,7 +51,6 @@ defmodule Streamer.DynamicStreamerSupervisor do
           )
 
         {:ok, _settings} = update_streaming_status(symbol, "off")
-        {:ok}
     end
   end
 
@@ -66,6 +69,15 @@ defmodule Streamer.DynamicStreamerSupervisor do
     DynamicSupervisor.start_child(
       Streamer.DynamicStreamerSupervisor,
       {Streamer.Binance, symbol}
+    )
+  end
+
+  defp fetch_symbols_to_stream do
+    Repo.all(
+      from(s in Settings,
+        where: s.status == "on",
+        select: s.symbol
+      )
     )
   end
 end
