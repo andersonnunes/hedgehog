@@ -12,7 +12,8 @@ defmodule Streamer.Application do
       {
         Phoenix.PubSub,
         name: Streamer.PubSub, adapter_name: Phoenix.PubSub.PG2
-      }
+      },
+      {Streamer.DynamicStreamerSupervisor, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
