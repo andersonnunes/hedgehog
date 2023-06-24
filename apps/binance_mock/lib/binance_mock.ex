@@ -1,12 +1,10 @@
 defmodule BinanceMock do
   use GenServer
 
+  alias Core.Struct.TradeEvent
   alias Decimal, as: D
-  alias Streamer.Binance.TradeEvent
 
   require Logger
-
-  @use_cached_exchange_info Application.compile_env(:binance_mock, :use_cached_exchange_info)
 
   defmodule State do
     defstruct order_books: %{}, subscriptions: [], fake_order_id: 1
@@ -25,7 +23,7 @@ defmodule BinanceMock do
   end
 
   def get_exchange_info() do
-    case @use_cached_exchange_info do
+    case Application.get_env(:binance_mock, :use_cached_exchange_info) do
       true -> get_cached_exchange_info()
       _ -> Binance.get_exchange_info()
     end
@@ -176,7 +174,7 @@ defmodule BinanceMock do
         Logger.debug("BinanceMock subscribing to #{stream_name}")
 
         Phoenix.PubSub.subscribe(
-          Streamer.PubSub,
+          Core.PubSub,
           stream_name
         )
 
@@ -274,7 +272,7 @@ defmodule BinanceMock do
 
   defp broadcast_trade_event(%TradeEvent{} = trade_event) do
     Phoenix.PubSub.broadcast(
-      Streamer.PubSub,
+      Core.PubSub,
       "TRADE_EVENTS:#{trade_event.symbol}",
       trade_event
     )
