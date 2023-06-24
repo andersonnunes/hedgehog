@@ -3,50 +3,43 @@ defmodule Core.ServiceSupervisor do
 
   import Ecto.Query, only: [from: 2]
 
-  def autostart_workers(repo, schema) do
+  def autostart_workers(repo, schema, module, worker_module) do
     fetch_symbols_to_start(repo, schema)
-    |> Enum.map(&start_worker(&1, repo, schema))
+    |> Enum.map(&start_worker(&1, repo, schema, module, worker_module))
   end
 
-  def start_worker(symbol, repo, schema) when is_binary(symbol) do
-    case get_pid(symbol) do
+  def start_worker(symbol, repo, schema, module, worker_module) when is_binary(symbol) do
+    case get_pid(worker_module, symbol) do
       nil ->
-        Logger.info("Starting trading of #{symbol}")
+        Logger.info("Starting #{worker_module} worker for #{symbol}")
         {:ok, _settings} = update_status(symbol, "on", repo, schema)
 
-        {:ok, _pid} =
-          DynamicSupervisor.start_child(
-            Naive.DynamicSymbolSupervisor,
-            {Naive.SymbolSupervisor, symbol}
-          )
+        {:ok, _pid} = DynamicSupervisor.start_child(module, {worker_module, symbol})
 
       pid ->
-        Logger.warning("Trading on #{symbol} already started")
+        Logger.warning("#{worker_module} worker for #{symbol} already started")
         {:ok, _settings} = update_status(symbol, "on", repo, schema)
         {:ok, pid}
     end
   end
 
-  def stop_worker(symbol, repo, schema) when is_binary(symbol) do
-    case get_pid(symbol) do
+  def stop_worker(symbol, repo, schema, module, worker_module) when is_binary(symbol) do
+    case get_pid(worker_module, symbol) do
       nil ->
-        Logger.warning("Trading on #{symbol} already stopped")
+        Logger.warning("#{worker_module} worker for #{symbol} already stopped")
         {:ok, _settings} = update_status(symbol, "off", repo, schema)
 
       pid ->
-        Logger.info("Stopping trading of #{symbol}")
+        Logger.info("Stopping #{worker_module} worker for #{symbol}")
 
-        :ok =
-          DynamicSupervisor.terminate_child(
-            Naive.DynamicSymbolSupervisor,
-            pid
-          )
+        :ok = DynamicSupervisor.terminate_child(module, pid)
 
         {:ok, _settings} = update_status(symbol, "off", repo, schema)
     end
   end
 
-  def get_pid(symbol) do
+  def get_pid(worker_module, symbol) do
+    Process.whereis(:"#{worker_module}-#{symbol}")
   end
 
   def update_status(symbol, status, repo, schema)
@@ -54,9 +47,6 @@ defmodule Core.ServiceSupervisor do
     repo.get_by(schema, symbol: symbol)
     |> Ecto.Changeset.change(%{status: status})
     |> repo.update()
-  end
-
-  defp start_symbol_supervisor(symbol) do
   end
 
   defp fetch_symbols_to_start(repo, schema) do

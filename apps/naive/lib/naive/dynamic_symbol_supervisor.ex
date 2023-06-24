@@ -14,7 +14,9 @@ defmodule Naive.DynamicSymbolSupervisor do
   def autostart_workers do
     Core.ServiceSupervisor.autostart_workers(
       Naive.Repo,
-      Naive.Schema.Settings
+      Naive.Schema.Settings,
+      __MODULE__,
+      Naive.SymbolSupervisor
     )
   end
 
@@ -22,7 +24,9 @@ defmodule Naive.DynamicSymbolSupervisor do
     Core.ServiceSupervisor.start_worker(
       symbol,
       Naive.Repo,
-      Naive.Schema.Settings
+      Naive.Schema.Settings,
+      __MODULE__,
+      Naive.SymbolSupervisor
     )
   end
 
@@ -30,19 +34,36 @@ defmodule Naive.DynamicSymbolSupervisor do
     Core.ServiceSupervisor.stop_worker(
       symbol,
       Naive.Repo,
-      Naive.Schema.Settings
+      Naive.Schema.Settings,
+      __MODULE__,
+      Naive.SymbolSupervisor
     )
   end
 
   def shutdown_trading(symbol) when is_binary(symbol) do
-    case Core.ServiceSupervisor.get_pid(symbol) do
+    case Core.ServiceSupervisor.get_pid(Naive.SymbolSupervisor, symbol) do
       nil ->
-        Logger.warning("Trading on #{symbol} already stopped")
-        {:ok, _settings} = Core.ServiceSupervisor.update_status(symbol, "off")
+        Logger.warning("#{Naive.SymbolSupervisor} worker for #{symbol} already stopped")
+
+        {:ok, _settings} =
+          Core.ServiceSupervisor.update_status(
+            symbol,
+            "off",
+            Naive.Repo,
+            Naive.Schema.Settings
+          )
 
       _pid ->
-        Logger.info("Shutdown of trading on #{symbol} initialized")
-        {:ok, settings} = Core.ServiceSupervisor.update_status(symbol, "shutdown")
+        Logger.info("Initializing shutdown of #{Naive.SymbolSupervisor} worker for #{symbol}")
+
+        {:ok, settings} =
+          Core.ServiceSupervisor.update_status(
+            symbol,
+            "shutdown",
+            Naive.Repo,
+            Naive.Schema.Settings
+          )
+
         Naive.Leader.notify(:settings_updated, settings)
         {:ok, settings}
     end
