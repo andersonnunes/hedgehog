@@ -53,3 +53,5 @@ config :naive,
       rebuy_interval: "0.001"
     }
   }
+
+import_config "#{config_env()}.exs"
