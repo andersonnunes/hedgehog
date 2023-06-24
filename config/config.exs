@@ -9,6 +9,12 @@
 # move said applications out of the umbrella.
 import Config
 
+config :naive, Naive.Repo,
+  database: "naive",
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost"
+
 config :logger,
   level: :info
 
@@ -18,4 +24,5 @@ if File.exists?("config/secrets.exs") do
 end
 
 config :naive,
+  ecto_repos: [Naive.Repo],
   binance_client: BinanceMock
