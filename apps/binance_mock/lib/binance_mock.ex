@@ -6,6 +6,8 @@ defmodule BinanceMock do
 
   require Logger
 
+  @use_cached_exchange_info Application.compile_env(:binance_mock, :use_cached_exchange_info)
+
   defmodule State do
     defstruct order_books: %{}, subscriptions: [], fake_order_id: 1
   end
@@ -22,8 +24,11 @@ defmodule BinanceMock do
     {:ok, %State{}}
   end
 
-  def get_exchange_info do
-    Binance.get_exchange_info()
+  def get_exchange_info() do
+    case @use_cached_exchange_info do
+      true -> get_cached_exchange_info()
+      _ -> Binance.get_exchange_info()
+    end
   end
 
   def order_limit_buy(symbol, quantity, price, "GTC") do
@@ -273,5 +278,22 @@ defmodule BinanceMock do
       "TRADE_EVENTS:#{trade_event.symbol}",
       trade_event
     )
+  end
+
+  defp get_cached_exchange_info do
+    {:ok, data} =
+      File.cwd!()
+      |> Path.split()
+      |> Enum.drop(-1)
+      |> Kernel.++([
+        "binance_mock",
+        "test",
+        "assets",
+        "exchange_info.json"
+      ])
+      |> Path.join()
+      |> File.read()
+
+    {:ok, Jason.decode!(data) |> Binance.ExchangeInfo.new()}
   end
 end
