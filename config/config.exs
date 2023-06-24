@@ -54,7 +54,11 @@ config :naive,
     }
   }
 
-import_config "#{config_env()}.exs"
-
 config :binance_mock,
   use_cached_exchange_info: false
+
+config :streamer,
+  binance_client: BinanceMock,
+  ecto_repos: [Streamer.Repo]
+
+import_config "#{config_env()}.exs"
