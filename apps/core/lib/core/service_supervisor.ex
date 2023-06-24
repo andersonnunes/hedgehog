@@ -1,6 +1,11 @@
 defmodule Core.ServiceSupervisor do
   require Logger
 
+  import Ecto.Query, only: [from: 2]
+
+  alias Naive.Repo
+  alias Naive.Schema.Settings
+
   def autostart_workers do
     fetch_symbols_to_start()
     |> Enum.map(&start_worker/1)
@@ -44,11 +49,11 @@ defmodule Core.ServiceSupervisor do
     end
   end
 
-  defp get_pid(symbol) do
+  def get_pid(symbol) do
   end
 
-  defp update_status(symbol, status)
-       when is_binary(symbol) and is_binary(status) do
+  def update_status(symbol, status)
+      when is_binary(symbol) and is_binary(status) do
   end
 
   defp start_symbol_supervisor(symbol) do
