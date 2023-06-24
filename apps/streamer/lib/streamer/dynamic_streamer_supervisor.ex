@@ -30,6 +30,27 @@ defmodule Streamer.DynamicStreamerSupervisor do
     end
   end
 
+  def stop_streaming(symbol) when is_binary(symbol) do
+    case get_pid(symbol) do
+      nil ->
+        Logger.warning("Streaming on #{symbol} already stopped")
+        {:ok, _settings} = update_streaming_status(symbol, "off")
+        {:ok}
+
+      pid ->
+        Logger.info("Stopping streaming on #{symbol}")
+
+        :ok =
+          DynamicSupervisor.terminate_child(
+            Streamer.DynamicStreamerSupervisor,
+            pid
+          )
+
+        {:ok, _settings} = update_streaming_status(symbol, "off")
+        {:ok}
+    end
+  end
+
   defp get_pid(symbol) do
     Process.whereis(:"Elixir.Streamer.Binance-#{symbol}")
   end
