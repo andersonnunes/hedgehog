@@ -58,6 +58,22 @@ defmodule Naive.DynamicSymbolSupervisor do
     end
   end
 
+  def shutdown_trading(symbol) when is_binary(symbol) do
+    symbol = String.upcase(symbol)
+
+    case get_pid(symbol) do
+      nil ->
+        Logger.warning("Trading on #{symbol} already stopped")
+        {:ok, _settings} = update_trading_status(symbol, "off")
+
+      _pid ->
+        Logger.info("Shutdown of trading on #{symbol} initialized")
+        {:ok, settings} = update_trading_status(symbol, "shutdown")
+        Naive.Leader.notify(:settings_updated, settings)
+        {:ok, settings}
+    end
+  end
+
   defp get_pid(symbol) do
     Process.whereis(:"Elixir.Naive.SymbolSupervisor-#{symbol}")
   end
