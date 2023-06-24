@@ -1,10 +1,10 @@
 defmodule Naive.Leader do
   use GenServer
 
-  require Logger
-
   alias Decimal, as: D
   alias Naive.Trader
+
+  require Logger
 
   @binance_client Application.compile_env(:naive, :binance_client)
 
@@ -52,7 +52,6 @@ defmodule Naive.Leader do
   def handle_continue(:start_traders, %{symbol: symbol} = state) do
     settings = fetch_symbol_settings(symbol)
     trader_state = fresh_trader_state(settings)
-
     traders = [start_new_trader(trader_state)]
 
     {:noreply, %{state | settings: settings, traders: traders}}
@@ -112,7 +111,11 @@ defmodule Naive.Leader do
 
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
-        Logger.warning("Tried to restart finished #{symbol} trader that leader is not aware of")
+        Logger.warning(
+          "Tried to restart finished #{symbol} " <>
+            "trader that leader is not aware of"
+        )
+
         {:noreply, state}
 
       index ->
@@ -131,7 +134,11 @@ defmodule Naive.Leader do
 
     case Enum.find_index(traders, &(&1.pid == trader_pid)) do
       nil ->
-        Logger.warning("Tried to restart #{symbol} trader but failed to find its cached state")
+        Logger.warning(
+          "Tried to restart #{symbol} trader " <>
+            "but failed to find its cached state"
+        )
+
         {:noreply, state}
 
       index ->
@@ -143,40 +150,31 @@ defmodule Naive.Leader do
     end
   end
 
+  defp fresh_trader_state(settings) do
+    %{
+      struct(Trader.State, settings)
+      | id: :os.system_time(:millisecond),
+        budget: D.div(settings.budget, settings.chunks),
+        rebuy_notified: false
+    }
+  end
+
   defp fetch_symbol_settings(symbol) do
     symbol_filters = fetch_symbol_filters(symbol)
 
     Map.merge(
       %{
         symbol: symbol,
-        budget: 100,
         chunks: 5,
+        budget: 100,
+        # -0.01% for quick testing
         buy_down_interval: "0.0001",
+        # -0.12% for quick testing
         profit_interval: "-0.0012",
         rebuy_interval: "0.001"
       },
       symbol_filters
     )
-  end
-
-  defp fresh_trader_state(settings) do
-    %{
-      struct(Trader.State, settings)
-      | budget: D.div(settings.budget, settings.chunks),
-        rebuy_notified: false
-    }
-  end
-
-  defp start_new_trader(%Trader.State{} = state) do
-    {:ok, pid} =
-      DynamicSupervisor.start_child(
-        :"Naive.DynamicTraderSupervisor-#{state.symbol}",
-        {Naive.Trader, state}
-      )
-
-    ref = Process.monitor(pid)
-
-    %TraderData{pid: pid, ref: ref, state: state}
   end
 
   defp fetch_symbol_filters(symbol) do
@@ -201,5 +199,17 @@ defmodule Naive.Leader do
       tick_size: tick_size,
       step_size: step_size
     }
+  end
+
+  defp start_new_trader(%Trader.State{} = state) do
+    {:ok, pid} =
+      DynamicSupervisor.start_child(
+        :"Naive.DynamicTraderSupervisor-#{state.symbol}",
+        {Naive.Trader, state}
+      )
+
+    ref = Process.monitor(pid)
+
+    %TraderData{pid: pid, ref: ref, state: state}
   end
 end
