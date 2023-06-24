@@ -3,11 +3,8 @@ defmodule Core.ServiceSupervisor do
 
   import Ecto.Query, only: [from: 2]
 
-  alias Naive.Repo
-  alias Naive.Schema.Settings
-
-  def autostart_workers do
-    fetch_symbols_to_start()
+  def autostart_workers(repo, schema) do
+    fetch_symbols_to_start(repo, schema)
     |> Enum.map(&start_worker/1)
   end
 
@@ -59,6 +56,12 @@ defmodule Core.ServiceSupervisor do
   defp start_symbol_supervisor(symbol) do
   end
 
-  defp fetch_symbols_to_start() do
+  defp fetch_symbols_to_start(repo, schema) do
+    repo.all(
+      from(s in schema,
+        where: s.status == "on",
+        select: s.symbol
+      )
+    )
   end
 end

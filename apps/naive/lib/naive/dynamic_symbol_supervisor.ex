@@ -12,7 +12,10 @@ defmodule Naive.DynamicSymbolSupervisor do
   end
 
   def autostart_workers do
-    Core.ServiceSupervisor.autostart_workers()
+    Core.ServiceSupervisor.autostart_workers(
+      Naive.Repo,
+      Naive.Schema.Settings
+    )
   end
 
   def start_trading(symbol) do
