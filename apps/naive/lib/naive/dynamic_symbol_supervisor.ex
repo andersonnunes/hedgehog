@@ -19,11 +19,19 @@ defmodule Naive.DynamicSymbolSupervisor do
   end
 
   def start_trading(symbol) do
-    Core.ServiceSupervisor.start_worker(symbol)
+    Core.ServiceSupervisor.start_worker(
+      symbol,
+      Naive.Repo,
+      Naive.Schema.Settings
+    )
   end
 
   def stop_trading(symbol) do
-    Core.ServiceSupervisor.stop_worker(symbol)
+    Core.ServiceSupervisor.stop_worker(
+      symbol,
+      Naive.Repo,
+      Naive.Schema.Settings
+    )
   end
 
   def shutdown_trading(symbol) when is_binary(symbol) do
